@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from renfield.transforms.base import Transform
+from .transforms.base import Transform
 
 
 def apply_transforms(

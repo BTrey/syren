@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from renfield.engine import apply_transforms
-from renfield.transforms.base import expand_numbered
-from renfield.transforms.case import CaseTransform, apply_case
-from renfield.transforms.postpend import PostpendTransform
-from renfield.transforms.prepend import PrependTransform
-from renfield.transforms.replace import ReplaceTransform
-from renfield.transforms.sub_regex import SubRegexTransform
+from syren.engine import apply_transforms
+from syren.transforms.base import expand_numbered
+from syren.transforms.case import CaseTransform, apply_case
+from syren.transforms.postpend import PostpendTransform
+from syren.transforms.prepend import PrependTransform
+from syren.transforms.replace import ReplaceTransform
+from syren.transforms.sub_regex import SubRegexTransform
 
 
 class TestExpandNumbered:

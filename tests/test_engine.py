@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from renfield.engine import apply_transforms
-from renfield.transforms.prepend import PrependTransform
+from syren.engine import apply_transforms
+from syren.transforms.prepend import PrependTransform
 
 
 def test_apply_transforms_with_no_transforms_returns_copy() -> None:

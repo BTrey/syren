@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from renfield.transforms import TRANSFORMS, create_transform, register_transform, transform_labels
-from renfield.transforms.prepend import PrependTransform
+from syren.transforms import TRANSFORMS, create_transform, register_transform, transform_labels
+from syren.transforms.prepend import PrependTransform
 
 
 def test_transform_labels_cover_all_registered_transforms() -> None:

@@ -6,10 +6,10 @@ from pathlib import Path
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.containers import Horizontal, HorizontalGroup, Vertical, VerticalScroll
+from textual.events import Click, Key
 from textual.message import Message
 from textual.screen import ModalScreen
-from textual.events import Key
 from textual.widgets import (
     Checkbox,
     Footer,
@@ -23,11 +23,11 @@ from textual.widgets import (
     Static,
 )
 
-from renfield.colors import SOLARIZED_CSS
-from renfield.engine import apply_transforms
-from renfield.files import filter_filenames, list_candidate_files
-from renfield.transforms import create_transform, transform_labels
-from renfield.transforms.base import FieldType, Transform
+from .colors import SOLARIZED_CSS
+from .engine import apply_transforms
+from .files import filter_filenames, list_candidate_files
+from .transforms import create_transform, transform_labels
+from .transforms.base import FieldType, Transform
 
 
 class FieldChanged(Message):
@@ -36,6 +36,14 @@ class FieldChanged(Message):
 
 class TransformSelected(Message):
     """Posted when the user selects a transform panel."""
+
+    def __init__(self, index: int) -> None:
+        self.index = index
+        super().__init__()
+
+
+class TransformRemoved(Message):
+    """Posted when the user removes a transform panel."""
 
     def __init__(self, index: int) -> None:
         self.index = index
@@ -59,23 +67,54 @@ class TransformPanel(Vertical):
         background: #073642;
     }
 
-    TransformPanel .transform-name {
-        color: #b58900;
-        text-style: bold;
+    TransformPanel .transform-header {
         height: 1;
         margin-bottom: 1;
     }
 
-    TransformPanel Input {
+    TransformPanel .transform-name {
+        color: #b58900;
+        text-style: bold;
+        height: 1;
+        width: 1fr;
+        content-align: left middle;
+    }
+
+    TransformPanel Static.remove-transform {
+        width: 3;
+        min-width: 3;
+        max-width: 3;
+        height: 1;
+        color: #dc322f;
+        text-style: bold;
+        background: #002b36;
+        border: none;
+        content-align: center middle;
+        text-align: center;
+    }
+
+    TransformPanel.-selected Static.remove-transform {
         background: #073642;
-        border: tall #586e75;
+    }
+
+    TransformPanel Static.remove-transform:hover {
+        background: #586e75;
+        color: #fdf6e3;
+    }
+
+    TransformPanel Input {
+        background: #002b36;
+        border: none;
         color: #eee8d5;
+        height: 1;
+        min-height: 1;
+        padding: 0 1;
         margin-bottom: 1;
     }
 
     TransformPanel Select {
-        background: #073642;
-        border: tall #586e75;
+        background: #002b36;
+        border: none;
         color: #eee8d5;
         margin-bottom: 1;
     }
@@ -92,10 +131,19 @@ class TransformPanel(Vertical):
         self.transform = transform
         self.selected = selected
 
+    def set_selected(self, selected: bool) -> None:
+        """Highlight this panel when selected for reordering."""
+        if selected:
+            self.add_class("-selected")
+        else:
+            self.remove_class("-selected")
+
     def compose(self) -> ComposeResult:
         if self.selected:
             self.add_class("-selected")
-        yield Static(self.transform.name, classes="transform-name")
+        with Horizontal(classes="transform-header"):
+            yield Static(self.transform.name, classes="transform-name")
+            yield Static(" X ", classes="remove-transform", id=f"remove-{self.index}")
         for spec in self.transform.field_specs():
             yield Label(spec.label)
             if spec.field_type is FieldType.SELECT:
@@ -109,6 +157,7 @@ class TransformPanel(Vertical):
                     value=self.transform.get_field(spec.key),
                     placeholder=spec.label,
                     id=f"field-{self.index}-{spec.key}",
+                    compact=True,
                 )
 
     def on_input_changed(self, event: Input.Changed) -> None:
@@ -136,7 +185,13 @@ class TransformPanel(Vertical):
             return widget_id[len(prefix) :]
         return None
 
-    def on_click(self) -> None:
+    def on_click(self, event: Click) -> None:
+        widget = event.widget
+        if isinstance(widget, Static) and "remove-transform" in widget.classes:
+            self.post_message(TransformRemoved(self.index))
+            return
+        if isinstance(widget, (Input, Select, Label)):
+            return
         self.post_message(TransformSelected(self.index))
 
 
@@ -176,6 +231,7 @@ class AddTransformScreen(ModalScreen[str | None]):
 
     def on_key(self, event: Key) -> None:
         if event.key == "escape":
+            event.stop()
             self.dismiss(None)
 
 
@@ -190,6 +246,8 @@ class RenameApp(App[None]):
         Binding("ctrl+down", "move_transform_down", "Move down", show=False),
         Binding("f", "focus_filter", "Filter", show=False),
         Binding("s", "toggle_subdirs", "Subdirs", show=False),
+        Binding("h", "toggle_hidden", "Hidden", show=False),
+        Binding("escape", "unfocus", "Unfocus", show=False),
         Binding("q", "quit", "Quit"),
     ]
 
@@ -200,26 +258,33 @@ class RenameApp(App[None]):
         self.selected_transform = 0
         self.filter_text = ""
         self.include_subdirs = False
+        self.include_hidden = False
         self.all_files: list[str] = []
         self.filtered_files: list[str] = []
         self.preview_names: list[str] = []
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
-        with Horizontal():
-            with Vertical(classes="column", id="transform-column"):
-                yield Static("Transforms", classes="column-title")
-                yield VerticalScroll(id="transform-list", classes="TransformList")
-            with Vertical(classes="column", id="file-column"):
-                yield Static("Files", classes="column-title")
-                with Vertical(classes="filter-panel"):
-                    yield Label("Filter")
-                    yield Input(placeholder="glob or fuzzy text", id="file-filter")
-                    yield Checkbox("Include subdirectories", id="include-subdirs")
-                yield ListView(id="file-list", classes="FileList")
-            with Vertical(classes="column", id="preview-column"):
-                yield Static("Preview", classes="column-title")
-                yield ListView(id="preview-list", classes="PreviewList")
+        with Vertical(id="main-content"):
+            with HorizontalGroup(id="filter-bar"):
+                yield Label("Filter")
+                yield Input(
+                    placeholder="glob or fuzzy text",
+                    id="file-filter",
+                    compact=True,
+                )
+                yield Checkbox("Include subdirectories", id="include-subdirs")
+                yield Checkbox("Include hidden files", id="include-hidden")
+            with Horizontal(id="columns"):
+                with Vertical(classes="column", id="transform-column"):
+                    yield Static("Transforms", classes="column-title")
+                    yield VerticalScroll(id="transform-list", classes="TransformList")
+                with Vertical(classes="column", id="file-column"):
+                    yield Static("Files", classes="column-title")
+                    yield ListView(id="file-list", classes="FileList")
+                with Vertical(classes="column", id="preview-column"):
+                    yield Static("Preview", classes="column-title")
+                    yield ListView(id="preview-list", classes="PreviewList")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -230,7 +295,11 @@ class RenameApp(App[None]):
         self.refresh_lists()
 
     def set_footer_help(self) -> None:
-        self.title = "renfield"
+        self.title = "syren"
+
+    def action_unfocus(self) -> None:
+        if isinstance(self.focused, (Input, Select)):
+            self.set_focus(None)
 
     def action_add_transform(self) -> None:
         def handle_result(name: str | None) -> None:
@@ -281,6 +350,10 @@ class RenameApp(App[None]):
         checkbox = self.query_one("#include-subdirs", Checkbox)
         checkbox.value = not checkbox.value
 
+    def action_toggle_hidden(self) -> None:
+        checkbox = self.query_one("#include-hidden", Checkbox)
+        checkbox.value = not checkbox.value
+
     def on_input_changed(self, event: Input.Changed) -> None:
         if event.input.id == "file-filter":
             self.filter_text = event.value
@@ -294,14 +367,49 @@ class RenameApp(App[None]):
             self.reload_files()
             self.refresh_preview()
             self.refresh_lists()
+        elif event.checkbox.id == "include-hidden":
+            self.include_hidden = event.value
+            self.reload_files()
+            self.refresh_preview()
+            self.refresh_lists()
 
     def on_field_changed(self, _event: FieldChanged) -> None:
         self.refresh_preview()
         self.refresh_lists()
 
     def on_transform_selected(self, event: TransformSelected) -> None:
+        if event.index == self.selected_transform:
+            return
         self.selected_transform = event.index
+        self.update_transform_selection()
+
+    def on_transform_removed(self, event: TransformRemoved) -> None:
+        self.remove_transform(event.index)
+
+    def remove_transform(self, index: int) -> None:
+        """Remove a transform and refresh the UI."""
+        if index < 0 or index >= len(self.transforms):
+            return
+
+        del self.transforms[index]
+
+        if not self.transforms:
+            self.selected_transform = 0
+        elif self.selected_transform > index:
+            self.selected_transform -= 1
+        elif self.selected_transform == index:
+            self.selected_transform = min(index, len(self.transforms) - 1)
+
         self.refresh_transform_panels()
+        self.refresh_preview()
+        self.refresh_lists()
+
+    def update_transform_selection(self) -> None:
+        """Update panel highlight without rebuilding editable widgets."""
+        container = self.query_one("#transform-list", VerticalScroll)
+        for child in container.children:
+            if isinstance(child, TransformPanel):
+                child.set_selected(child.index == self.selected_transform)
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         if event.list_view.id == "transform-list":
@@ -317,6 +425,7 @@ class RenameApp(App[None]):
         self.all_files = list_candidate_files(
             self.directory,
             include_subdirs=self.include_subdirs,
+            include_hidden=self.include_hidden,
         )
         self.apply_file_filter()
 

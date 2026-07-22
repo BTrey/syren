@@ -1,4 +1,4 @@
-# renfield
+# syren
 
 Three-column TUI (Textual + Rich) for previewing chained filename transforms before renaming. Uses the Solarized Dark palette.
 
@@ -7,6 +7,8 @@ Three-column TUI (Textual + Rich) for previewing chained filename transforms bef
 | Transforms | Files | Preview |
 |------------|-------|---------|
 | Ordered transform stack with editable fields | Filterable file list from the current directory | Result of applying all transforms to each file |
+
+A bordered filter row above the columns holds the filename filter, the include-subdirectories checkbox, and the include-hidden-files checkbox.
 
 ## Transforms
 
@@ -18,12 +20,16 @@ Three-column TUI (Textual + Rich) for previewing chained filename transforms bef
 
 Each transform is a Python class implementing `Transform.apply(filename, file_index)`. Add new transforms by subclassing `Transform`, registering with `register_transform`, and they appear in the add menu automatically.
 
+Each transform panel has an **X** button in the upper-right corner to remove it from the stack.
+
 ## Hotkeys
 
 - **a** — add a transform
 - **Ctrl+↑ / Ctrl+↓** — move the selected transform up or down (click a transform panel to select it)
 - **f** — focus the file filter
 - **s** — toggle include subdirectories
+- **h** — toggle include hidden files
+- **Esc** — remove focus from the current input/select field
 - **q** — quit
 
 The file filter accepts globs (`*.txt`) or fuzzy subsequence text.
@@ -37,18 +43,24 @@ The file filter accepts globs (`*.txt`) or fuzzy subsequence text.
 ## Project layout
 
 ```
-renfield/
+syren/
   main.py              # root entry point
   pyproject.toml
   uv.lock
-  src/renfield/        # application package
+  src/                 # application source (installed as the syren package)
+    app.py
+    colors.py
+    engine.py
+    files.py
+    fuzzy.py
+    transforms/
   tests/               # pytest suite
 ```
 
 ## Setup
 
 ```bash
-cd ~/dev/playspace/renfield
+cd ~/dev/playspace/syren
 uv sync --group dev
 ```
 
@@ -57,7 +69,7 @@ uv sync --group dev
 Run from a normal terminal (Textual needs a real TTY):
 
 ```bash
-uv run renfield
+uv run syren
 uv run python main.py
 ```
 
@@ -65,7 +77,7 @@ uv run python main.py
 
 ```bash
 uv run pytest
-uv run pytest --cov=renfield --cov-report=term-missing
+uv run pytest --cov=syren --cov-report=term-missing
 uv run mypy
-uv run pylint src/renfield tests main.py
+uv run pylint src tests main.py
 ```

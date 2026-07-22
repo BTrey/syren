@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "renfield"
+name = "syren"
 version = "0.1.0"
 description = "Interactive TUI for batch file renaming"
 readme = "README.md"
@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-renfield = "renfield.__main__:main"
+syren = "syren.__main__:main"
 
 [dependency-groups]
 dev = [
@@ -23,17 +23,16 @@ dev = [
     "pylint>=3.0",
 ]
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/renfield"]
+[tool.hatch.build.targets.wheel.force-include]
+"src" = "syren"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
 
 [tool.coverage.run]
-source = ["renfield"]
+source = ["syren"]
 branch = true
-omit = ["src/renfield/app.py"]
+omit = ["*/syren/app.py"]
 
 [tool.coverage.report]
 fail_under = 95
@@ -42,8 +41,9 @@ show_missing = true
 [tool.mypy]
 python_version = "3.11"
 strict = true
+packages = ["syren"]
 mypy_path = "src"
-packages = ["renfield"]
+explicit_package_bases = true
 
 [[tool.mypy.overrides]]
 module = "textual.*"
@@ -51,7 +51,7 @@ ignore_missing_imports = true
 
 [tool.pylint.main]
 py-version = "3.11"
-ignore-paths = ["src/renfield/app.py"]
+ignore-paths = ["src/app.py"]
 
 [tool.pylint.format]
 max-line-length = 100

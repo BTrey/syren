@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from renfield.transforms.base import FieldSpec, FieldType, Transform, split_stem
+from .base import FieldSpec, FieldType, Transform, split_stem
 
 CASE_OPTIONS = ("UPPER", "lower", "sentence")
 

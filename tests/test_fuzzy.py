@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from renfield.fuzzy import filter_items, score_match
+from syren.fuzzy import filter_items, score_match
 
 
 def test_score_match_empty_query() -> None:

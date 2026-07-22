@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from renfield.transforms.base import FieldSpec, Transform
+from .base import FieldSpec, Transform
 
 
 @dataclass

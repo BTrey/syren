@@ -1,6 +1,12 @@
 {
   "include": ["src", "tests", "main.py"],
-  "extraPaths": ["src"],
   "typeCheckingMode": "strict",
-  "pythonVersion": "3.11"
+  "pythonVersion": "3.11",
+  "executionEnvironments": [
+    {
+      "root": "src",
+      "pythonVersion": "3.11",
+      "extraPaths": ["src"]
+    }
+  ]
 }

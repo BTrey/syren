@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from typing import TypeVar
 
-from renfield.transforms.base import Transform
-from renfield.transforms.case import CaseTransform
-from renfield.transforms.postpend import PostpendTransform
-from renfield.transforms.prepend import PrependTransform
-from renfield.transforms.replace import ReplaceTransform
-from renfield.transforms.sub_regex import SubRegexTransform
+from .base import Transform
+from .case import CaseTransform
+from .postpend import PostpendTransform
+from .prepend import PrependTransform
+from .replace import ReplaceTransform
+from .sub_regex import SubRegexTransform
 
 T = TypeVar("T", bound=Transform)
 

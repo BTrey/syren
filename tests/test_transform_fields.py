@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from renfield.transforms.base import Transform, split_stem
-from renfield.transforms.case import CaseTransform, apply_case
-from renfield.transforms.postpend import PostpendTransform
-from renfield.transforms.prepend import PrependTransform
-from renfield.transforms.replace import ReplaceTransform
-from renfield.transforms.sub_regex import SubRegexTransform
+from syren.transforms.base import Transform, split_stem
+from syren.transforms.case import CaseTransform, apply_case
+from syren.transforms.postpend import PostpendTransform
+from syren.transforms.prepend import PrependTransform
+from syren.transforms.replace import ReplaceTransform
+from syren.transforms.sub_regex import SubRegexTransform
 
 
 def test_split_stem_handles_hidden_files() -> None:

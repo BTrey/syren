@@ -58,27 +58,48 @@ Footer {
     margin-bottom: 1;
 }
 
-.filter-panel {
-    border: solid #2aa198;
+#main-content {
+    height: 1fr;
+}
+
+#filter-bar {
+    width: 1fr;
     height: auto;
+    border: round #2aa198;
+    background: #073642;
     padding: 0 1;
     margin-bottom: 1;
+    align: left middle;
 }
 
-.filter-panel Label {
-    color: #93a1a1;
-}
-
-.filter-panel Input {
-    background: #073642;
-    border: tall #586e75;
+#filter-bar Label {
     color: #eee8d5;
-    margin: 0 0 1 0;
+    width: auto;
+    height: 1;
+    padding: 0 1 0 0;
+    content-align: left middle;
 }
 
-.filter-panel Checkbox {
+#filter-bar Input {
     background: #002b36;
-    color: #839496;
+    border: none;
+    color: #eee8d5;
+    width: 1fr;
+    height: 1;
+    padding: 0 1;
+    margin: 0 1 0 0;
+}
+
+#filter-bar Checkbox {
+    border: none;
+    color: #eee8d5;
+    width: auto;
+    height: 1;
+    margin-right: 1;
+}
+
+#columns {
+    height: 1fr;
 }
 
 FileList, PreviewList {
@@ -125,15 +146,18 @@ TransformPanel .transform-name {
 }
 
 TransformPanel Input {
-    background: #073642;
-    border: tall #586e75;
+    background: #002b36;
+    border: none;
     color: #eee8d5;
+    height: 1;
+    min-height: 1;
+    padding: 0 1;
     margin-bottom: 1;
 }
 
 TransformPanel Select {
-    background: #073642;
-    border: tall #586e75;
+    background: #002b36;
+    border: none;
     color: #eee8d5;
     margin-bottom: 1;
 }
