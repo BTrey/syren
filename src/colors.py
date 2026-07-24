@@ -35,7 +35,7 @@ Header {
     height: 1;
 }
 
-Footer {
+Footer, HotkeyFooter {
     background: #073642;
     color: #586e75;
     dock: bottom;

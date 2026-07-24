@@ -41,7 +41,7 @@ def transform_labels() -> list[tuple[str, str]]:
     return [(name, labels.get(name, name)) for name in TRANSFORMS]
 
 
-MENU_HIGHLIGHT_COLOR = "#268bd2"
+MENU_HIGHLIGHT_COLOR = "#b58900"
 
 
 def transform_menu_options() -> list[tuple[str, str]]:

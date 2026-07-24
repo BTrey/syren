@@ -12,6 +12,22 @@ from syren.transforms import create_transform
 from syren.transforms.sub_regex import SubRegexTransform
 
 
+def test_f_focuses_filter_input(tmp_path: Path) -> None:
+    async def scenario() -> None:
+        app = RenameApp(tmp_path)
+        async with app.run_test() as pilot:
+            app.set_focus(None)
+            await pilot.pause()
+            filter_input = app.query_one("#file-filter", Input)
+            assert app.focused is not filter_input
+
+            await pilot.press("f")
+            await pilot.pause()
+            assert app.focused is filter_input
+
+    asyncio.run(scenario())
+
+
 def test_escape_blurs_focused_filter_input(tmp_path: Path) -> None:
     async def scenario() -> None:
         app = RenameApp(tmp_path)

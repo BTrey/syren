@@ -19,7 +19,7 @@ def test_transform_menu_options_are_sorted_alphabetically() -> None:
 
 
 def test_format_transform_menu_label_highlights_first_letter() -> None:
-    assert format_transform_menu_label("Case") == "[bold #268bd2]C[/]ase"
+    assert format_transform_menu_label("Case") == "[bold #b58900]C[/]ase"
 
 
 def test_jump_to_menu_letter_selects_first_match() -> None:

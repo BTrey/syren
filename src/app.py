@@ -12,7 +12,6 @@ from textual.message import Message
 from textual.screen import ModalScreen
 from textual.widgets import (
     Checkbox,
-    Footer,
     Header,
     Input,
     Label,
@@ -34,6 +33,83 @@ from .transforms import (
     transform_menu_options,
 )
 from .transforms.base import FieldType, Transform
+
+FOOTER_KEY_STYLE = "bold #eee8d5 on #586e75"
+FOOTER_LABEL_STYLE = "#93a1a1"
+FOOTER_HOTKEYS: tuple[tuple[str, str], ...] = (
+    ("a", "Add transform"),
+    ("f", "Focus filter"),
+    ("e", "Execute"),
+    ("q", "Quit"),
+)
+FOOTER_PALETTE_HOTKEY = ("ctrl+p", "Palette")
+
+
+def format_hotkey_segment(key: str, label: str) -> str:
+    """Render one footer hotkey badge and label."""
+    key_display = key
+    if key.startswith("ctrl+"):
+        key_display = f"^{key[5:]}"
+    return f"[{FOOTER_KEY_STYLE}] {key_display} [/][{FOOTER_LABEL_STYLE}]{label}[/]"
+
+
+def footer_primary_hotkey_markup() -> str:
+    """Render left-aligned footer hotkeys."""
+    return "  ".join(format_hotkey_segment(key, label) for key, label in FOOTER_HOTKEYS)
+
+
+def footer_palette_hotkey_markup() -> str:
+    """Render the right-aligned command palette hotkey."""
+    key, label = FOOTER_PALETTE_HOTKEY
+    return format_hotkey_segment(key, label)
+
+
+def footer_hotkey_markup() -> str:
+    """Render the bottom-row hotkey help text."""
+    return footer_primary_hotkey_markup()
+
+
+class HotkeyFooter(Horizontal):
+    """Always-visible footer row listing app hotkeys."""
+
+    DEFAULT_CSS = """
+    HotkeyFooter {
+        dock: bottom;
+        height: 1;
+        width: 1fr;
+        background: #073642;
+        padding: 0 1;
+    }
+
+    HotkeyFooter Static#hotkey-footer-primary {
+        width: 1fr;
+        height: 1;
+        background: transparent;
+        content-align: left middle;
+    }
+
+    HotkeyFooter Static#hotkey-footer-palette {
+        width: auto;
+        height: 1;
+        background: transparent;
+        content-align: right middle;
+    }
+    """
+
+    def __init__(self) -> None:
+        super().__init__(id="hotkey-footer")
+
+    def compose(self) -> ComposeResult:
+        yield Static(
+            footer_primary_hotkey_markup(),
+            id="hotkey-footer-primary",
+            markup=True,
+        )
+        yield Static(
+            footer_palette_hotkey_markup(),
+            id="hotkey-footer-palette",
+            markup=True,
+        )
 
 
 class FieldChanged(Message):
@@ -379,13 +455,14 @@ class ErrorScreen(ModalScreen[None]):
 class RenameApp(App[None]):
     """Interactive three-column file rename preview."""
 
+    AUTO_FOCUS = None
     CSS = SOLARIZED_CSS
 
     BINDINGS = [
         Binding("a", "add_transform", "Add transform"),
         Binding("ctrl+up", "move_transform_up", "Move up", show=False),
         Binding("ctrl+down", "move_transform_down", "Move down", show=False),
-        Binding("f", "focus_filter", "Filter", show=False),
+        Binding("f", "focus_filter", "Focus filter"),
         Binding("s", "toggle_subdirs", "Subdirs", show=False),
         Binding("h", "toggle_hidden", "Hidden", show=False),
         Binding("e", "execute_rename", "Execute"),
@@ -409,7 +486,7 @@ class RenameApp(App[None]):
         yield Header(show_clock=False)
         with Vertical(id="main-content"):
             with HorizontalGroup(id="filter-bar"):
-                yield Label("Filter")
+                yield Label(format_transform_menu_label("Filter"))
                 yield Input(
                     placeholder="glob or fuzzy text",
                     id="file-filter",
@@ -427,7 +504,7 @@ class RenameApp(App[None]):
                 with Vertical(classes="column", id="preview-column"):
                     yield Static("Preview", classes="column-title")
                     yield ListView(id="preview-list", classes="PreviewList")
-        yield Footer()
+        yield HotkeyFooter()
 
     def on_mount(self) -> None:
         self.sub_title = str(self.directory)
