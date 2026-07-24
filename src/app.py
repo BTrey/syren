@@ -34,7 +34,8 @@ from .transforms import (
 )
 from .transforms.base import FieldType, Transform
 
-FOOTER_KEY_STYLE = "bold #eee8d5 on #586e75"
+FOOTER_BAR_BACKGROUND = "#073642"
+FOOTER_KEY_STYLE = f"bold #b58900 on {FOOTER_BAR_BACKGROUND}"
 FOOTER_LABEL_STYLE = "#93a1a1"
 FOOTER_HOTKEYS: tuple[tuple[str, str], ...] = (
     ("a", "Add transform"),
@@ -340,12 +341,22 @@ class AddTransformScreen(ModalScreen[str | None]):
         option_list = self.query_one("#transform-options", OptionList)
         if option_list.option_count:
             option_list.highlighted = 0
+        self._focus_option_list()
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         if 0 <= event.option_index < len(self._options):
             self.dismiss(self._options[event.option_index][0])
         else:
             self.dismiss(None)
+
+    def _focus_option_list(self) -> None:
+        self.query_one("#transform-options", OptionList).focus()
+
+    def _select_highlighted(self) -> None:
+        option_list = self.query_one("#transform-options", OptionList)
+        highlighted = option_list.highlighted
+        if highlighted is not None and 0 <= highlighted < len(self._options):
+            self.dismiss(self._options[highlighted][0])
 
     def _jump_to_letter(self, letter: str) -> None:
         option_list = self.query_one("#transform-options", OptionList)
@@ -359,11 +370,16 @@ class AddTransformScreen(ModalScreen[str | None]):
             return
         option_list.highlighted = target
         option_list.scroll_to_highlight()
+        self._focus_option_list()
 
     def on_key(self, event: Key) -> None:
         if event.key == "escape":
             event.stop()
             self.dismiss(None)
+            return
+        if event.key == "enter":
+            event.stop()
+            self._select_highlighted()
             return
         if event.character and len(event.character) == 1 and event.character.isalpha():
             event.stop()

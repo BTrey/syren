@@ -29,6 +29,11 @@ def test_footer_hotkey_markup_includes_filter_key() -> None:
     assert "Focus filter" in markup
 
 
+def test_footer_hotkey_markup_uses_yellow_keys_on_bar_background() -> None:
+    markup = footer_primary_hotkey_markup()
+    assert "bold #b58900 on #073642" in markup
+
+
 def test_footer_palette_hotkey_markup_uses_ctrl_p_display() -> None:
     markup = footer_palette_hotkey_markup()
     assert "^p" in markup

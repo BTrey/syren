@@ -87,3 +87,51 @@ def test_add_transform_menu_letter_navigation(tmp_path: Path) -> None:
             assert option_list.highlighted == prepend_index
 
     asyncio.run(scenario())
+
+
+def test_add_transform_menu_enter_selects_highlighted_option(tmp_path: Path) -> None:
+    async def scenario() -> None:
+        app = RenameApp(tmp_path)
+        async with app.run_test() as pilot:
+            app.set_focus(None)
+            await pilot.pause()
+            await pilot.press("a")
+            await pilot.pause()
+
+            screen = app.screen
+            assert isinstance(screen, AddTransformScreen)
+            option_list = screen.query_one("#transform-options")
+            labels = [label for _, label in transform_menu_options()]
+            prepend_index = labels.index("Prepend")
+
+            await pilot.press("p")
+            await pilot.pause()
+            await pilot.press("p")
+            await pilot.pause()
+            assert option_list.highlighted == prepend_index
+
+            await pilot.press("enter")
+            await pilot.pause()
+            assert len(app.screen_stack) == 1
+            assert len(app.transforms) == 1
+            assert app.transforms[0].name == "prepend"
+
+    asyncio.run(scenario())
+
+
+def test_add_transform_menu_enter_selects_first_option_by_default(tmp_path: Path) -> None:
+    async def scenario() -> None:
+        app = RenameApp(tmp_path)
+        async with app.run_test() as pilot:
+            app.set_focus(None)
+            await pilot.pause()
+            await pilot.press("a")
+            await pilot.pause()
+
+            await pilot.press("enter")
+            await pilot.pause()
+            assert len(app.screen_stack) == 1
+            assert len(app.transforms) == 1
+            assert app.transforms[0].name == "case"
+
+    asyncio.run(scenario())
