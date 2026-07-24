@@ -123,48 +123,7 @@ TransformList {
     overflow-y: auto;
     scrollbar-background: #073642;
     scrollbar-color: #586e75;
-}
-
-TransformPanel {
-    border: solid #586e75;
-    height: auto;
-    padding: 0 1;
-    margin-bottom: 1;
     background: #002b36;
-}
-
-TransformPanel.-selected {
-    border: solid #268bd2;
-    background: #073642;
-}
-
-TransformPanel .transform-name {
-    color: #b58900;
-    text-style: bold;
-    height: 1;
-    margin-bottom: 1;
-}
-
-TransformPanel Input {
-    background: #002b36;
-    border: none;
-    color: #eee8d5;
-    height: 1;
-    min-height: 1;
-    padding: 0 1;
-    margin-bottom: 1;
-}
-
-TransformPanel Select {
-    background: #002b36;
-    border: none;
-    color: #eee8d5;
-    margin-bottom: 1;
-}
-
-TransformPanel Label {
-    color: #93a1a1;
-    margin-bottom: 0;
 }
 
 AddTransformMenu {

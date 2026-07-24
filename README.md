@@ -30,6 +30,7 @@ Each transform panel has an **X** button in the upper-right corner to remove it 
 - **s** — toggle include subdirectories
 - **h** — toggle include hidden files
 - **Esc** — remove focus from the current input/select field
+- **e** — execute rename (with confirmation and collision checks)
 - **q** — quit
 
 The file filter accepts globs (`*.txt`) or fuzzy subsequence text.

@@ -26,6 +26,7 @@ from textual.widgets import (
 from .colors import SOLARIZED_CSS
 from .engine import apply_transforms
 from .files import filter_filenames, list_candidate_files
+from .rename import execute_rename_plan, validate_rename_plan
 from .transforms import create_transform, transform_labels
 from .transforms.base import FieldType, Transform
 
@@ -55,21 +56,24 @@ class TransformPanel(Vertical):
 
     DEFAULT_CSS = """
     TransformPanel {
-        border: solid #586e75;
+        border: none;
         height: auto;
-        padding: 0 1;
-        margin-bottom: 1;
+        padding: 0 1 1 1;
+        margin-bottom: 0;
         background: #002b36;
     }
 
     TransformPanel.-selected {
-        border: solid #268bd2;
         background: #073642;
+    }
+
+    TransformList > TransformPanel:last-child {
+        padding-bottom: 0;
     }
 
     TransformPanel .transform-header {
         height: 1;
-        margin-bottom: 1;
+        margin-bottom: 0;
     }
 
     TransformPanel .transform-name {
@@ -87,14 +91,10 @@ class TransformPanel(Vertical):
         height: 1;
         color: #dc322f;
         text-style: bold;
-        background: #002b36;
+        background: transparent;
         border: none;
         content-align: center middle;
         text-align: center;
-    }
-
-    TransformPanel.-selected Static.remove-transform {
-        background: #073642;
     }
 
     TransformPanel Static.remove-transform:hover {
@@ -103,25 +103,43 @@ class TransformPanel(Vertical):
     }
 
     TransformPanel Input {
-        background: #002b36;
+        background: #073642;
         border: none;
         color: #eee8d5;
         height: 1;
         min-height: 1;
         padding: 0 1;
-        margin-bottom: 1;
+        margin-bottom: 0;
+    }
+
+    TransformPanel.-selected Input {
+        background: #002b36;
     }
 
     TransformPanel Select {
-        background: #002b36;
+        height: 1;
+        background: #586e75;
         border: none;
         color: #eee8d5;
-        margin-bottom: 1;
+        margin-bottom: 0;
     }
 
-    TransformPanel Label {
-        color: #93a1a1;
-        margin-bottom: 0;
+    TransformPanel Select > SelectCurrent {
+        height: 1;
+        border: none;
+        padding: 0 1;
+        background: #586e75;
+    }
+
+    TransformPanel Select > SelectCurrent Static#label {
+        height: 1;
+        color: #eee8d5;
+        background: transparent;
+    }
+
+    TransformPanel Select > SelectCurrent .arrow {
+        background: transparent;
+        color: #eee8d5;
     }
     """
 
@@ -145,12 +163,12 @@ class TransformPanel(Vertical):
             yield Static(self.transform.name, classes="transform-name")
             yield Static(" X ", classes="remove-transform", id=f"remove-{self.index}")
         for spec in self.transform.field_specs():
-            yield Label(spec.label)
             if spec.field_type is FieldType.SELECT:
                 yield Select(
                     [(option, option) for option in spec.options],
                     value=self.transform.get_field(spec.key),
                     id=f"field-{self.index}-{spec.key}",
+                    compact=True,
                 )
             else:
                 yield Input(
@@ -235,6 +253,88 @@ class AddTransformScreen(ModalScreen[str | None]):
             self.dismiss(None)
 
 
+class ConfirmRenameScreen(ModalScreen[bool]):
+    """Ask the user to confirm executing a batch rename."""
+
+    BINDINGS = [
+        Binding("y", "confirm", "Yes", show=False),
+        Binding("n", "cancel", "No", show=False),
+    ]
+
+    DEFAULT_CSS = """
+    ConfirmRenameScreen {
+        align: center middle;
+    }
+
+    ConfirmRenameScreen Static {
+        width: 60;
+        max-width: 60;
+        border: solid #268bd2;
+        background: #073642;
+        color: #eee8d5;
+        padding: 1 2;
+    }
+    """
+
+    def __init__(self, count: int) -> None:
+        super().__init__()
+        self.count = count
+
+    def compose(self) -> ComposeResult:
+        yield Static(
+            (
+                f"Rename {self.count} file(s)? "
+                "Press [bold #268bd2]y[/] to confirm or [bold #268bd2]n[/] to cancel."
+            ),
+            id="confirm-message",
+        )
+
+    def action_confirm(self) -> None:
+        self.dismiss(True)
+
+    def action_cancel(self) -> None:
+        self.dismiss(False)
+
+    def on_key(self, event: Key) -> None:
+        if event.key == "escape":
+            event.stop()
+            self.dismiss(False)
+
+
+class ErrorScreen(ModalScreen[None]):
+    """Display a rename validation or execution error."""
+
+    DEFAULT_CSS = """
+    ErrorScreen {
+        align: center middle;
+    }
+
+    ErrorScreen Static {
+        width: 60;
+        max-width: 60;
+        border: solid #dc322f;
+        background: #073642;
+        color: #eee8d5;
+        padding: 1 2;
+    }
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__()
+        self.message = message
+
+    def compose(self) -> ComposeResult:
+        yield Static(
+            f"{self.message}\nPress [bold #268bd2]Esc[/] or [bold #268bd2]Enter[/] to close.",
+            id="error-message",
+        )
+
+    def on_key(self, event: Key) -> None:
+        if event.key in {"escape", "enter"}:
+            event.stop()
+            self.dismiss(None)
+
+
 class RenameApp(App[None]):
     """Interactive three-column file rename preview."""
 
@@ -247,6 +347,7 @@ class RenameApp(App[None]):
         Binding("f", "focus_filter", "Filter", show=False),
         Binding("s", "toggle_subdirs", "Subdirs", show=False),
         Binding("h", "toggle_hidden", "Hidden", show=False),
+        Binding("e", "execute_rename", "Execute", show=False),
         Binding("escape", "unfocus", "Unfocus", show=False),
         Binding("q", "quit", "Quit"),
     ]
@@ -301,6 +402,19 @@ class RenameApp(App[None]):
         if isinstance(self.focused, (Input, Select)):
             self.set_focus(None)
 
+    def focus_transform_field(self, index: int) -> None:
+        """Focus the first editable field in a transform panel, if any."""
+        container = self.query_one("#transform-list", VerticalScroll)
+        for child in container.children:
+            if isinstance(child, TransformPanel) and child.index == index:
+                for widget in child.query(Input):
+                    widget.focus()
+                    return
+                for widget in child.query(Select):
+                    widget.focus()
+                    return
+        self.set_focus(None)
+
     def action_add_transform(self) -> None:
         def handle_result(name: str | None) -> None:
             if name is None:
@@ -310,8 +424,12 @@ class RenameApp(App[None]):
             self.refresh_transform_panels()
             self.refresh_preview()
             self.refresh_lists()
+            self.call_after_refresh(self._focus_selected_transform)
 
         self.push_screen(AddTransformScreen(), handle_result)
+
+    def _focus_selected_transform(self) -> None:
+        self.focus_transform_field(self.selected_transform)
 
     def action_move_transform_up(self) -> None:
         if len(self.transforms) < 2:
@@ -353,6 +471,43 @@ class RenameApp(App[None]):
     def action_toggle_hidden(self) -> None:
         checkbox = self.query_one("#include-hidden", Checkbox)
         checkbox.value = not checkbox.value
+
+    def action_execute_rename(self) -> None:
+        pairs = list(zip(self.filtered_files, self.preview_names, strict=True))
+        active_pairs = [(source, target) for source, target in pairs if source != target]
+        if not active_pairs:
+            return
+
+        error = validate_rename_plan(active_pairs, self.directory)
+        if error is not None:
+            self.push_screen(ErrorScreen(error))
+            return
+
+        def handle_confirm(confirmed: bool | None) -> None:
+            if not confirmed:
+                return
+            current_pairs = list(
+                zip(self.filtered_files, self.preview_names, strict=True)
+            )
+            current_active = [
+                (source, target)
+                for source, target in current_pairs
+                if source != target
+            ]
+            validation_error = validate_rename_plan(current_active, self.directory)
+            if validation_error is not None:
+                self.push_screen(ErrorScreen(validation_error))
+                return
+            try:
+                execute_rename_plan(current_active, self.directory)
+            except ValueError as exc:
+                self.push_screen(ErrorScreen(str(exc)))
+                return
+            self.reload_files()
+            self.refresh_preview()
+            self.refresh_lists()
+
+        self.push_screen(ConfirmRenameScreen(len(active_pairs)), handle_confirm)
 
     def on_input_changed(self, event: Input.Changed) -> None:
         if event.input.id == "file-filter":
