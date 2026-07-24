@@ -41,6 +41,47 @@ def transform_labels() -> list[tuple[str, str]]:
     return [(name, labels.get(name, name)) for name in TRANSFORMS]
 
 
+MENU_HIGHLIGHT_COLOR = "#268bd2"
+
+
+def transform_menu_options() -> list[tuple[str, str]]:
+    """Return transform menu entries sorted alphabetically by label."""
+    return sorted(transform_labels(), key=lambda item: item[1].casefold())
+
+
+def format_transform_menu_label(label: str) -> str:
+    """Highlight the first letter of a transform menu label."""
+    if not label:
+        return label
+    return f"[bold {MENU_HIGHLIGHT_COLOR}]{label[0]}[/]{label[1:]}"
+
+
+def jump_to_menu_letter(
+    options: list[tuple[str, str]],
+    letter: str,
+    *,
+    current_index: int | None,
+    last_letter: str | None,
+) -> tuple[int | None, str | None]:
+    """Return the option index and updated last letter for letter navigation."""
+    normalized = letter.casefold()
+    matches = [
+        index
+        for index, (_, label) in enumerate(options)
+        if label[:1].casefold() == normalized
+    ]
+    if not matches:
+        return current_index, last_letter
+
+    if last_letter == normalized and current_index in matches:
+        position = matches.index(current_index)
+        target = matches[(position + 1) % len(matches)]
+    else:
+        target = matches[0]
+
+    return target, normalized
+
+
 def create_transform(name: str) -> Transform:
     """Instantiate a new transform by registry key."""
     cls = TRANSFORMS[name]

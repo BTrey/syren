@@ -73,6 +73,10 @@ class TestCaseTransform:
         transform = CaseTransform(mode="sentence")
         assert transform.apply("hello_world.txt", 0) == "Hello_world.txt"
 
+    def test_title_on_stem(self) -> None:
+        transform = CaseTransform(mode="title")
+        assert transform.apply("hello_world-test.txt", 0) == "Hello_World-Test.txt"
+
 
 class TestApplyTransforms:
     def test_pipeline_order(self) -> None:

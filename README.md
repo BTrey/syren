@@ -16,7 +16,7 @@ A bordered filter row above the columns holds the filename filter, the include-s
 - **Postpend** — same numbering behavior, appended to the end
 - **Replace** — literal find/replace
 - **Sub Regex** — regex find/replace
-- **Case** — UPPER, lower, or sentence case on the filename stem
+- **Case** — UPPER, lower, Sentence, or Title Case on the filename stem
 
 Each transform is a Python class implementing `Transform.apply(filename, file_index)`. Add new transforms by subclassing `Transform`, registering with `register_transform`, and they appear in the add menu automatically.
 

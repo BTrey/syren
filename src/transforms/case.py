@@ -2,11 +2,42 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from .base import FieldSpec, FieldType, Transform, split_stem
 
-CASE_OPTIONS = ("UPPER", "lower", "sentence")
+CASE_MODES = frozenset({"UPPER", "lower", "sentence", "title"})
+CASE_SELECT_OPTIONS: tuple[tuple[str, str], ...] = (
+    ("UPPER", "UPPER"),
+    ("lower", "lower"),
+    ("Sentence", "sentence"),
+    ("Title Case", "title"),
+)
+
+
+def _capitalize_word(word: str) -> str:
+    lowered = word.lower()
+    for index, character in enumerate(lowered):
+        if character.isalpha():
+            return lowered[:index] + character.upper() + lowered[index + 1 :]
+    return word
+
+
+def apply_title_case(stem: str) -> str:
+    """Capitalize each alphanumeric word; non-alphanumeric characters are separators."""
+    if not stem:
+        return stem
+    pieces = re.split(r"([^0-9A-Za-z]+)", stem)
+    result: list[str] = []
+    for index, piece in enumerate(pieces):
+        if not piece:
+            continue
+        if index % 2 == 0:
+            result.append(_capitalize_word(piece))
+        else:
+            result.append(piece)
+    return "".join(result)
 
 
 def apply_case(stem: str, mode: str) -> str:
@@ -18,6 +49,8 @@ def apply_case(stem: str, mode: str) -> str:
         if not stem:
             return stem
         return stem[0].upper() + stem[1:].lower()
+    if mode == "title":
+        return apply_title_case(stem)
     return stem
 
 
@@ -39,7 +72,8 @@ class CaseTransform(Transform):
                 "mode",
                 "Case",
                 field_type=FieldType.SELECT,
-                options=CASE_OPTIONS,
+                options=tuple(mode for _, mode in CASE_SELECT_OPTIONS),
+                select_options=CASE_SELECT_OPTIONS,
             ),
         )
 
@@ -50,13 +84,13 @@ class CaseTransform(Transform):
 
     def set_field(self, key: str, value: str) -> None:
         if key == "mode":
-            self.mode = value if value in CASE_OPTIONS else "lower"
+            self.mode = value if value in CASE_MODES else "lower"
             return
         raise KeyError(key)
 
     @classmethod
     def from_fields(cls, fields: dict[str, str]) -> CaseTransform:
         mode = fields.get("mode", "lower")
-        if mode not in CASE_OPTIONS:
+        if mode not in CASE_MODES:
             mode = "lower"
         return cls(mode=mode)

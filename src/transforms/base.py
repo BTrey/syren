@@ -20,6 +20,7 @@ class FieldSpec:
     label: str
     field_type: FieldType = FieldType.TEXT
     options: tuple[str, ...] = ()
+    select_options: tuple[tuple[str, str], ...] = ()
 
 
 NUMBER_PATTERN = re.compile(r"#(\d+)")

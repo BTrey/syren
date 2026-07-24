@@ -27,7 +27,12 @@ from .colors import SOLARIZED_CSS
 from .engine import apply_transforms
 from .files import filter_filenames, list_candidate_files
 from .rename import execute_rename_plan, validate_rename_plan
-from .transforms import create_transform, transform_labels
+from .transforms import (
+    create_transform,
+    format_transform_menu_label,
+    jump_to_menu_letter,
+    transform_menu_options,
+)
 from .transforms.base import FieldType, Transform
 
 
@@ -164,8 +169,13 @@ class TransformPanel(Vertical):
             yield Static(" X ", classes="remove-transform", id=f"remove-{self.index}")
         for spec in self.transform.field_specs():
             if spec.field_type is FieldType.SELECT:
+                select_options = (
+                    list(spec.select_options)
+                    if spec.select_options
+                    else [(option, option) for option in spec.options]
+                )
                 yield Select(
-                    [(option, option) for option in spec.options],
+                    select_options,
                     value=self.transform.get_field(spec.key),
                     id=f"field-{self.index}-{spec.key}",
                     compact=True,
@@ -236,21 +246,52 @@ class AddTransformScreen(ModalScreen[str | None]):
     }
     """
 
+    def __init__(self) -> None:
+        super().__init__()
+        self._options = transform_menu_options()
+        self._last_letter: str | None = None
+
     def compose(self) -> ComposeResult:
-        options = [label for _, label in transform_labels()]
-        yield OptionList(*options, id="transform-options")
+        yield OptionList(
+            *[
+                format_transform_menu_label(label)
+                for _, label in self._options
+            ],
+            id="transform-options",
+        )
+
+    def on_mount(self) -> None:
+        option_list = self.query_one("#transform-options", OptionList)
+        if option_list.option_count:
+            option_list.highlighted = 0
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
-        labels = transform_labels()
-        if 0 <= event.option_index < len(labels):
-            self.dismiss(labels[event.option_index][0])
+        if 0 <= event.option_index < len(self._options):
+            self.dismiss(self._options[event.option_index][0])
         else:
             self.dismiss(None)
+
+    def _jump_to_letter(self, letter: str) -> None:
+        option_list = self.query_one("#transform-options", OptionList)
+        target, self._last_letter = jump_to_menu_letter(
+            self._options,
+            letter,
+            current_index=option_list.highlighted,
+            last_letter=self._last_letter,
+        )
+        if target is None:
+            return
+        option_list.highlighted = target
+        option_list.scroll_to_highlight()
 
     def on_key(self, event: Key) -> None:
         if event.key == "escape":
             event.stop()
             self.dismiss(None)
+            return
+        if event.character and len(event.character) == 1 and event.character.isalpha():
+            event.stop()
+            self._jump_to_letter(event.character)
 
 
 class ConfirmRenameScreen(ModalScreen[bool]):
@@ -347,7 +388,7 @@ class RenameApp(App[None]):
         Binding("f", "focus_filter", "Filter", show=False),
         Binding("s", "toggle_subdirs", "Subdirs", show=False),
         Binding("h", "toggle_hidden", "Hidden", show=False),
-        Binding("e", "execute_rename", "Execute", show=False),
+        Binding("e", "execute_rename", "Execute"),
         Binding("escape", "unfocus", "Unfocus", show=False),
         Binding("q", "quit", "Quit"),
     ]

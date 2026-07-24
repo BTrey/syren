@@ -27,6 +27,20 @@ def test_apply_case_modes() -> None:
     assert apply_case("unknown", "unknown") == "unknown"
 
 
+def test_apply_title_case() -> None:
+    assert apply_case("hello_world", "title") == "Hello_World"
+    assert apply_case("hello-world", "title") == "Hello-World"
+    assert apply_case("hello world", "title") == "Hello World"
+    assert apply_case("already Mixed", "title") == "Already Mixed"
+
+
+def test_case_select_option_labels() -> None:
+    transform = CaseTransform()
+    spec = transform.field_specs()[0]
+    assert ("Sentence", "sentence") in spec.select_options
+    assert ("Title Case", "title") in spec.select_options
+
+
 def test_case_transform_rejects_invalid_mode() -> None:
     transform = CaseTransform.from_fields({"mode": "Title"})
     assert transform.mode == "lower"
