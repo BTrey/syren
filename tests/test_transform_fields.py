@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import asyncio
+from pathlib import Path
+
 import pytest
 
+from syren.app import RenameApp, TransformPanel
 from syren.transforms.base import Transform, split_stem
 from syren.transforms.case import CaseTransform, apply_case
 from syren.transforms.postpend import PostpendTransform
 from syren.transforms.prepend import PrependTransform
+from syren.transforms.range import RangeTransform
 from syren.transforms.replace import ReplaceTransform
 from syren.transforms.sub_regex import SubRegexTransform
 
@@ -119,3 +124,18 @@ def test_transform_to_dict_round_trip_fields() -> None:
 def test_transform_from_dict_not_implemented() -> None:
     with pytest.raises(NotImplementedError):
         Transform.from_dict({})
+
+
+def test_range_transform_fields_render_on_one_row(tmp_path: Path) -> None:
+    async def scenario() -> None:
+        app = RenameApp(tmp_path)
+        app.transforms.append(RangeTransform(start="0", end="3"))
+        async with app.run_test() as pilot:
+            app.refresh_transform_panels()
+            await pilot.pause()
+            panel = app.query(TransformPanel).first()
+            start_input = panel.query_one("#field-0-start")
+            end_input = panel.query_one("#field-0-end")
+            assert start_input.region.y == end_input.region.y
+
+    asyncio.run(scenario())

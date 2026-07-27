@@ -43,6 +43,8 @@ class TestRangeTransform:
         transform = RangeTransform()
         keys = [spec.key for spec in transform.field_specs()]
         assert keys == ["start", "end"]
+        groups = [spec.group for spec in transform.field_specs()]
+        assert groups == ["indices", "indices"]
 
     def test_field_access(self) -> None:
         transform = RangeTransform(start="1", end="3")

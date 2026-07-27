@@ -48,8 +48,8 @@ class RangeTransform(Transform):
 
     def field_specs(self) -> tuple[FieldSpec, ...]:
         return (
-            FieldSpec("start", "Start index"),
-            FieldSpec("end", "End index"),
+            FieldSpec("start", "Start index", group="indices"),
+            FieldSpec("end", "End index", group="indices"),
         )
 
     def get_field(self, key: str) -> str:

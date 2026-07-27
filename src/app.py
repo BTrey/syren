@@ -32,7 +32,7 @@ from .transforms import (
     jump_to_menu_letter,
     transform_menu_options,
 )
-from .transforms.base import FieldType, Transform
+from .transforms.base import FieldSpec, FieldType, Transform
 
 FOOTER_BAR_BACKGROUND = "#073642"
 FOOTER_KEY_STYLE = f"bold #b58900 on {FOOTER_BAR_BACKGROUND}"
@@ -223,6 +223,15 @@ class TransformPanel(Vertical):
         background: transparent;
         color: #eee8d5;
     }
+
+    TransformPanel .transform-field-row {
+        height: 1;
+        width: 1fr;
+    }
+
+    TransformPanel .transform-field-row Input {
+        width: 1fr;
+    }
     """
 
     def __init__(self, index: int, transform: Transform, *, selected: bool = False) -> None:
@@ -244,26 +253,48 @@ class TransformPanel(Vertical):
         with Horizontal(classes="transform-header"):
             yield Static(self.transform.name, classes="transform-name")
             yield Static(" X ", classes="remove-transform", id=f"remove-{self.index}")
-        for spec in self.transform.field_specs():
-            if spec.field_type is FieldType.SELECT:
-                select_options = (
-                    list(spec.select_options)
-                    if spec.select_options
-                    else [(option, option) for option in spec.options]
-                )
-                yield Select(
-                    select_options,
-                    value=self.transform.get_field(spec.key),
-                    id=f"field-{self.index}-{spec.key}",
-                    compact=True,
-                )
+        for group, specs in self._field_groups():
+            if group is not None:
+                with Horizontal(classes="transform-field-row"):
+                    for spec in specs:
+                        yield from self._compose_field(spec)
             else:
-                yield Input(
-                    value=self.transform.get_field(spec.key),
-                    placeholder=spec.label,
-                    id=f"field-{self.index}-{spec.key}",
-                    compact=True,
-                )
+                for spec in specs:
+                    yield from self._compose_field(spec)
+
+    def _field_groups(self) -> list[tuple[str | None, tuple[FieldSpec, ...]]]:
+        groups: list[tuple[str | None, list[FieldSpec]]] = []
+        for spec in self.transform.field_specs():
+            if (
+                spec.group is not None
+                and groups
+                and groups[-1][0] == spec.group
+            ):
+                groups[-1][1].append(spec)
+            else:
+                groups.append((spec.group, [spec]))
+        return [(group, tuple(specs)) for group, specs in groups]
+
+    def _compose_field(self, spec: FieldSpec) -> ComposeResult:
+        if spec.field_type is FieldType.SELECT:
+            select_options = (
+                list(spec.select_options)
+                if spec.select_options
+                else [(option, option) for option in spec.options]
+            )
+            yield Select(
+                select_options,
+                value=self.transform.get_field(spec.key),
+                id=f"field-{self.index}-{spec.key}",
+                compact=True,
+            )
+            return
+        yield Input(
+            value=self.transform.get_field(spec.key),
+            placeholder=spec.label,
+            id=f"field-{self.index}-{spec.key}",
+            compact=True,
+        )
 
     def on_input_changed(self, event: Input.Changed) -> None:
         key = self._field_key(event.input.id)

@@ -21,6 +21,7 @@ class FieldSpec:
     field_type: FieldType = FieldType.TEXT
     options: tuple[str, ...] = ()
     select_options: tuple[tuple[str, str], ...] = ()
+    group: str | None = None
 
 
 NUMBER_PATTERN = re.compile(r"#(\d+)")
