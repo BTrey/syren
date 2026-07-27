@@ -8,6 +8,7 @@ from .base import Transform
 from .case import CaseTransform
 from .postpend import PostpendTransform
 from .prepend import PrependTransform
+from .range import RangeTransform
 from .replace import ReplaceTransform
 from .sub_regex import SubRegexTransform
 
@@ -17,6 +18,7 @@ TRANSFORMS: dict[str, type[Transform]] = {
     PrependTransform().name: PrependTransform,
     PostpendTransform().name: PostpendTransform,
     ReplaceTransform().name: ReplaceTransform,
+    RangeTransform().name: RangeTransform,
     SubRegexTransform().name: SubRegexTransform,
     CaseTransform().name: CaseTransform,
 }
@@ -35,6 +37,7 @@ def transform_labels() -> list[tuple[str, str]]:
         "prepend": "Prepend",
         "postpend": "Postpend",
         "replace": "Replace",
+        "range": "Range",
         "sub_regex": "Sub Regex",
         "case": "Case",
     }
