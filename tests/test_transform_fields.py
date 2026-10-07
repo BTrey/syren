@@ -6,6 +6,7 @@ import asyncio
 from pathlib import Path
 
 import pytest
+from textual.widgets import Input
 
 from syren.app import RenameApp, TransformPanel
 from syren.transforms.base import Transform, split_stem
@@ -124,6 +125,39 @@ def test_transform_to_dict_round_trip_fields() -> None:
 def test_transform_from_dict_not_implemented() -> None:
     with pytest.raises(NotImplementedError):
         Transform.from_dict({})
+
+
+def test_title_markup_appends_invalid_in_red_for_invalid_transform() -> None:
+    panel = TransformPanel(0, SubRegexTransform(pattern="(a)", replacement="\\"))
+    markup = panel.title_markup()
+    assert "Invalid" in markup
+    assert "#dc322f" in markup
+
+
+def test_title_markup_is_plain_name_for_valid_transform() -> None:
+    panel = TransformPanel(0, SubRegexTransform(pattern="(a)", replacement="b"))
+    assert panel.title_markup() == "sub_regex"
+
+
+def test_panel_title_updates_when_replacement_becomes_invalid(tmp_path: Path) -> None:
+    async def scenario() -> None:
+        app = RenameApp(tmp_path)
+        app.transforms.append(SubRegexTransform(pattern="(a)", replacement="b"))
+        async with app.run_test() as pilot:
+            app.refresh_transform_panels()
+            await pilot.pause()
+            panel = app.query(TransformPanel).first()
+            replacement = panel.query_one("#field-0-replacement", Input)
+
+            replacement.value = "\\"
+            await pilot.pause()
+            assert "Invalid" in panel.title_markup()
+
+            replacement.value = "b"
+            await pilot.pause()
+            assert panel.title_markup() == "sub_regex"
+
+    asyncio.run(scenario())
 
 
 def test_range_transform_fields_render_on_one_row(tmp_path: Path) -> None:

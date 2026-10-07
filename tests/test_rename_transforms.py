@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import pytest
+
 from syren.engine import apply_transforms
-from syren.transforms.base import expand_numbered
+from syren.transforms.base import TransformError, expand_numbered
 from syren.transforms.case import CaseTransform, apply_case
 from syren.transforms.postpend import PostpendTransform
 from syren.transforms.prepend import PrependTransform
 from syren.transforms.replace import ReplaceTransform
-from syren.transforms.sub_regex import INVALID_REPLACEMENT, SubRegexTransform
+from syren.transforms.sub_regex import SubRegexTransform
 
 
 class TestExpandNumbered:
@@ -61,17 +63,24 @@ class TestSubRegexTransform:
     def test_invalid_regex_is_noop(self) -> None:
         transform = SubRegexTransform(pattern="[", replacement="!")
         assert transform.apply("file.txt", 0) == "file.txt"
+        assert transform.is_valid() is True
 
-    def test_invalid_replacement_shows_sentinel(self) -> None:
+    def test_invalid_replacement_raises(self) -> None:
         transform = SubRegexTransform(pattern="(a)", replacement="\\")
-        assert transform.apply("abc.txt", 0) == INVALID_REPLACEMENT
+        with pytest.raises(TransformError):
+            transform.apply("abc.txt", 0)
 
-    def test_invalid_replacement_bad_group_shows_sentinel(self) -> None:
+    def test_invalid_replacement_is_not_valid(self) -> None:
+        transform = SubRegexTransform(pattern="(a)", replacement="\\")
+        assert transform.is_valid() is False
+
+    def test_bad_backreference_is_not_valid(self) -> None:
         transform = SubRegexTransform(pattern="(a)", replacement=r"\2")
-        assert transform.apply("abc.txt", 0) == INVALID_REPLACEMENT
+        assert transform.is_valid() is False
 
-    def test_valid_replacement_not_affected(self) -> None:
+    def test_valid_replacement_is_valid_and_applies(self) -> None:
         transform = SubRegexTransform(pattern="(a)", replacement=r"[\1]")
+        assert transform.is_valid() is True
         assert transform.apply("abc.txt", 0) == "[a]bc.txt"
 
 

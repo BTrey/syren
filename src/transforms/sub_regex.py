@@ -5,10 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-from .base import FieldSpec, Transform
-
-#: Shown in the preview when the replacement string is not valid.
-INVALID_REPLACEMENT = "Invalid"
+from .base import FieldSpec, Transform, TransformError
 
 
 @dataclass
@@ -37,8 +34,19 @@ class SubRegexTransform(Transform):
             return filename
         try:
             return regex.sub(self.replacement, filename)
+        except re.error as exc:
+            raise TransformError("invalid regex replacement") from exc
+
+    def is_valid(self) -> bool:
+        regex = self._regex()
+        if regex is None:
+            # Empty or non-compiling pattern is a no-op, not an error.
+            return True
+        try:
+            regex.sub(self.replacement, "")
         except re.error:
-            return INVALID_REPLACEMENT
+            return False
+        return True
 
     def field_specs(self) -> tuple[FieldSpec, ...]:
         return (

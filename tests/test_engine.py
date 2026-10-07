@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from syren.engine import apply_transforms
+from syren.engine import INVALID_PREVIEW, apply_transforms
+from syren.transforms.case import CaseTransform
 from syren.transforms.prepend import PrependTransform
+from syren.transforms.sub_regex import SubRegexTransform
 
 
 def test_apply_transforms_with_no_transforms_returns_copy() -> None:
@@ -29,3 +31,19 @@ def test_apply_transforms_preserves_directory_names_in_pipeline() -> None:
     ]
     result = apply_transforms(["folder/name.txt"], transforms)
     assert result == ["folder/y_x_name.txt"]
+
+
+def test_invalid_transform_shows_invalid_for_every_file() -> None:
+    transforms = [SubRegexTransform(pattern="(a)", replacement="\\")]
+    result = apply_transforms(["abc.txt", "def.txt"], transforms)
+    assert result == [INVALID_PREVIEW, INVALID_PREVIEW]
+
+
+def test_invalid_transform_short_circuits_rest_of_chain() -> None:
+    # If the chain kept running, CaseTransform(UPPER) would turn the
+    # sentinel into "INVALID". Short-circuiting keeps it unmodified.
+    transforms = [
+        SubRegexTransform(pattern="(a)", replacement="\\"),
+        CaseTransform(mode="UPPER"),
+    ]
+    assert apply_transforms(["abc.txt"], transforms) == [INVALID_PREVIEW]

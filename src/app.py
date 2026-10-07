@@ -247,11 +247,22 @@ class TransformPanel(Vertical):
         else:
             self.remove_class("-selected")
 
+    def title_markup(self) -> str:
+        """Return the header title, with a red 'Invalid' tag when invalid."""
+        if self.transform.is_valid():
+            return self.transform.name
+        return f"{self.transform.name} [bold #dc322f]Invalid[/]"
+
+    def refresh_title(self) -> None:
+        """Update the header title to match the transform validity."""
+        title = self.query_one(".transform-name", Static)
+        title.update(self.title_markup())
+
     def compose(self) -> ComposeResult:
         if self.selected:
             self.add_class("-selected")
         with Horizontal(classes="transform-header"):
-            yield Static(self.transform.name, classes="transform-name")
+            yield Static(self.title_markup(), classes="transform-name", markup=True)
             yield Static(" X ", classes="remove-transform", id=f"remove-{self.index}")
         for group, specs in self._field_groups():
             if group is not None:
@@ -695,7 +706,15 @@ class RenameApp(App[None]):
 
     def on_field_changed(self, _event: FieldChanged) -> None:
         self.refresh_preview()
+        self.refresh_transform_validity()
         self.refresh_lists()
+
+    def refresh_transform_validity(self) -> None:
+        """Mark each transform panel title valid or invalid in place."""
+        container = self.query_one("#transform-list", VerticalScroll)
+        for child in container.children:
+            if isinstance(child, TransformPanel):
+                child.refresh_title()
 
     def on_transform_selected(self, event: TransformSelected) -> None:
         if event.index == self.selected_transform:

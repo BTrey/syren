@@ -14,6 +14,14 @@ class FieldType(str, Enum):
     SELECT = "select"
 
 
+class TransformError(Exception):
+    """Raised by a transform when its current field values are not valid.
+
+    The engine catches this and shows the invalid sentinel in the preview
+    instead of crashing.
+    """
+
+
 @dataclass(frozen=True)
 class FieldSpec:
     key: str
@@ -59,6 +67,14 @@ class Transform(ABC):
     @abstractmethod
     def apply(self, filename: str, file_index: int) -> str:
         """Return filename after applying this transform."""
+
+    def is_valid(self) -> bool:
+        """Return True when the current field values can be applied.
+
+        A transform that returns False is skipped by the engine, which shows
+        the invalid sentinel in the preview. The default is always valid.
+        """
+        return True
 
     @abstractmethod
     def field_specs(self) -> tuple[FieldSpec, ...]:
