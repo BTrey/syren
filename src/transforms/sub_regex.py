@@ -7,6 +7,9 @@ from dataclasses import dataclass, field
 
 from .base import FieldSpec, Transform
 
+#: Shown in the preview when the replacement string is not valid.
+INVALID_REPLACEMENT = "Invalid"
+
 
 @dataclass
 class SubRegexTransform(Transform):
@@ -32,7 +35,10 @@ class SubRegexTransform(Transform):
         regex = self._regex()
         if regex is None:
             return filename
-        return regex.sub(self.replacement, filename)
+        try:
+            return regex.sub(self.replacement, filename)
+        except re.error:
+            return INVALID_REPLACEMENT
 
     def field_specs(self) -> tuple[FieldSpec, ...]:
         return (

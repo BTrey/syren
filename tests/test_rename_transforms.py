@@ -8,7 +8,7 @@ from syren.transforms.case import CaseTransform, apply_case
 from syren.transforms.postpend import PostpendTransform
 from syren.transforms.prepend import PrependTransform
 from syren.transforms.replace import ReplaceTransform
-from syren.transforms.sub_regex import SubRegexTransform
+from syren.transforms.sub_regex import INVALID_REPLACEMENT, SubRegexTransform
 
 
 class TestExpandNumbered:
@@ -61,6 +61,18 @@ class TestSubRegexTransform:
     def test_invalid_regex_is_noop(self) -> None:
         transform = SubRegexTransform(pattern="[", replacement="!")
         assert transform.apply("file.txt", 0) == "file.txt"
+
+    def test_invalid_replacement_shows_sentinel(self) -> None:
+        transform = SubRegexTransform(pattern="(a)", replacement="\\")
+        assert transform.apply("abc.txt", 0) == INVALID_REPLACEMENT
+
+    def test_invalid_replacement_bad_group_shows_sentinel(self) -> None:
+        transform = SubRegexTransform(pattern="(a)", replacement=r"\2")
+        assert transform.apply("abc.txt", 0) == INVALID_REPLACEMENT
+
+    def test_valid_replacement_not_affected(self) -> None:
+        transform = SubRegexTransform(pattern="(a)", replacement=r"[\1]")
+        assert transform.apply("abc.txt", 0) == "[a]bc.txt"
 
 
 class TestCaseTransform:
