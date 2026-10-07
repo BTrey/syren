@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -318,9 +319,9 @@ class TransformPanel(Vertical):
         key = self._field_key(event.select.id)
         if key is None:
             return
-        value = event.value
+        value: object = event.value
         if isinstance(value, tuple):
-            value = value[0]
+            value = cast("tuple[object, ...]", value)[0]
         self.transform.set_field(key, str(value))
         self.post_message(FieldChanged())
 
@@ -583,11 +584,11 @@ class RenameApp(App[None]):
         container = self.query_one("#transform-list", VerticalScroll)
         for child in container.children:
             if isinstance(child, TransformPanel) and child.index == index:
-                for widget in child.query(Input):
-                    widget.focus()
+                for text_input in child.query(Input):
+                    text_input.focus()
                     return
-                for widget in child.query(Select):
-                    widget.focus()
+                for select in child.query("Select"):
+                    select.focus()
                     return
         self.set_focus(None)
 
