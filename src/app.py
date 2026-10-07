@@ -524,6 +524,7 @@ class RenameApp(App[None]):
         Binding("f", "focus_filter", "Focus filter"),
         Binding("s", "toggle_subdirs", "Subdirs", show=False),
         Binding("h", "toggle_hidden", "Hidden", show=False),
+        Binding("i", "toggle_ignore_extension", "Ignore extension", show=False),
         Binding("e", "execute_rename", "Execute"),
         Binding("escape", "unfocus", "Unfocus", show=False),
         Binding("q", "quit", "Quit"),
@@ -537,6 +538,7 @@ class RenameApp(App[None]):
         self.filter_text = ""
         self.include_subdirs = False
         self.include_hidden = False
+        self.ignore_extension = False
         self.all_files: list[str] = []
         self.filtered_files: list[str] = []
         self.preview_names: list[str] = []
@@ -553,6 +555,7 @@ class RenameApp(App[None]):
                 )
                 yield Checkbox("Include subdirectories", id="include-subdirs")
                 yield Checkbox("Include hidden files", id="include-hidden")
+                yield Checkbox("Ignore extension", id="ignore-extension")
             with Horizontal(id="columns"):
                 with Vertical(classes="column", id="transform-column"):
                     yield Static("Transforms", classes="column-title")
@@ -649,6 +652,10 @@ class RenameApp(App[None]):
         checkbox = self.query_one("#include-hidden", Checkbox)
         checkbox.value = not checkbox.value
 
+    def action_toggle_ignore_extension(self) -> None:
+        checkbox = self.query_one("#ignore-extension", Checkbox)
+        checkbox.value = not checkbox.value
+
     def action_execute_rename(self) -> None:
         pairs = list(zip(self.filtered_files, self.preview_names, strict=True))
         active_pairs = [(source, target) for source, target in pairs if source != target]
@@ -702,6 +709,10 @@ class RenameApp(App[None]):
         elif event.checkbox.id == "include-hidden":
             self.include_hidden = event.value
             self.reload_files()
+            self.refresh_preview()
+            self.refresh_lists()
+        elif event.checkbox.id == "ignore-extension":
+            self.ignore_extension = event.value
             self.refresh_preview()
             self.refresh_lists()
 
@@ -776,7 +787,11 @@ class RenameApp(App[None]):
         if not self.transforms:
             self.preview_names = list(self.filtered_files)
             return
-        self.preview_names = apply_transforms(self.filtered_files, self.transforms)
+        self.preview_names = apply_transforms(
+            self.filtered_files,
+            self.transforms,
+            ignore_extension=self.ignore_extension,
+        )
 
     def refresh_transform_panels(self) -> None:
         container = self.query_one("#transform-list", VerticalScroll)

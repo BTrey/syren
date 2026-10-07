@@ -8,7 +8,9 @@ Three-column TUI (Textual + Rich) for previewing chained filename transforms bef
 |------------|-------|---------|
 | Ordered transform stack with editable fields | Filterable file list from the current directory | Result of applying all transforms to each file |
 
-A bordered filter row above the columns holds the filename filter, the include-subdirectories checkbox, and the include-hidden-files checkbox.
+A bordered filter row above the columns holds the filename filter, the include-subdirectories checkbox, the include-hidden-files checkbox, and the ignore-extension checkbox.
+
+By default the last "." in a filename marks the extension. Transforms apply only to the base name and the engine keeps the extension. Select **Ignore extension** to apply transforms to the whole filename instead.
 
 ## Transforms
 
@@ -29,6 +31,7 @@ Each transform panel has an **X** button in the upper-right corner to remove it 
 - **f** — focus the file filter
 - **s** — toggle include subdirectories
 - **h** — toggle include hidden files
+- **i** — toggle ignore extension
 - **Esc** — remove focus from the current input/select field
 - **e** — execute rename (with confirmation and collision checks)
 - **q** — quit

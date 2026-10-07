@@ -6,7 +6,7 @@ import asyncio
 from pathlib import Path
 
 import pytest
-from textual.widgets import Input
+from textual.widgets import Checkbox, Input
 
 from syren.app import RenameApp, TransformPanel
 from syren.transforms.base import Transform, split_stem
@@ -156,6 +156,44 @@ def test_panel_title_updates_when_replacement_becomes_invalid(tmp_path: Path) ->
             replacement.value = "b"
             await pilot.pause()
             assert panel.title_markup() == "sub_regex"
+
+    asyncio.run(scenario())
+
+
+def test_ignore_extension_checkbox_defaults_to_preserving_extension(
+    tmp_path: Path,
+) -> None:
+    async def scenario() -> None:
+        (tmp_path / "file.txt").write_text("", encoding="utf-8")
+        app = RenameApp(tmp_path)
+        app.transforms.append(PostpendTransform(text="_x"))
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            checkbox = app.query_one("#ignore-extension", Checkbox)
+            assert checkbox.value is False
+            assert app.ignore_extension is False
+            assert app.preview_names == ["file_x.txt"]
+
+    asyncio.run(scenario())
+
+
+def test_ignore_extension_checkbox_toggles_whole_name(tmp_path: Path) -> None:
+    async def scenario() -> None:
+        (tmp_path / "file.txt").write_text("", encoding="utf-8")
+        app = RenameApp(tmp_path)
+        app.transforms.append(PostpendTransform(text="_x"))
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            checkbox = app.query_one("#ignore-extension", Checkbox)
+
+            checkbox.value = True
+            await pilot.pause()
+            assert app.ignore_extension is True
+            assert app.preview_names == ["file.txt_x"]
+
+            checkbox.value = False
+            await pilot.pause()
+            assert app.preview_names == ["file_x.txt"]
 
     asyncio.run(scenario())
 
